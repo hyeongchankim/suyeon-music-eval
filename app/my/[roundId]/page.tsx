@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, FileDown, Lock, Download, Music, Trophy } from "lucide-react";
+import { MapPin, FileDown, Lock, Download, Music } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireStudent } from "@/lib/auth";
 import { formatRoundDate, parseList } from "@/lib/format";
-import { percentileTop, rankingState, RANKING_MIN } from "@/lib/ranking";
+import { rankingState, sumAvg, inSameGroup, RANKING_MIN } from "@/lib/ranking";
 import OptInButton from "@/components/my/OptInButton";
-import { toggleRankingOptIn, toggleAudioOptIn } from "./actions";
+import Badge from "@/components/my/Badge";
+import RankingTab from "@/components/my/RankingTab";
+import { toggleAudioOptIn } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +20,6 @@ const TABS = [
   { key: "audio", label: "음원공유" },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
-
-const sumAvg = (scores: { average: number | null }[]) =>
-  scores.reduce((s, x) => s + (x.average ?? 0), 0);
 
 export default async function RoundDetailPage({
   params,
@@ -43,28 +42,11 @@ export default async function RoundDetailPage({
   const tab: TabKey = (TABS.find((t) => t.key === searchParams.tab)?.key ??
     "arrival") as TabKey;
   const { round } = application;
-  const myMajors = parseList(application.majors);
 
-  // 그룹 키 = (targetSchool, major, roundId) — 최소 한 개 전공이 겹치는 동일 지망학교 지원자
+  // 그룹 키 = (targetSchool, major, roundId) — 최소 한 개 전공이 겹치는 동일 지망학교 지원자.
+  // 그룹랭킹 탭은 /api/ranking 로 이동했고, 음원공유 탭 인원 집계에만 사용한다.
   const sameGroup = <T extends { majors: string; targetSchool: string }>(rows: T[]) =>
-    rows.filter(
-      (a) =>
-        a.targetSchool === application.targetSchool &&
-        parseList(a.majors).some((m) => myMajors.includes(m)),
-    );
-
-  // 탭별로 필요한 그룹 집계만 조회
-  let rankingMembers: { total: number; scored: boolean }[] = [];
-  if (tab === "ranking") {
-    const rows = await db.application.findMany({
-      where: { roundId: round.id, rankingOptIn: true },
-      include: { scores: true },
-    });
-    rankingMembers = sameGroup(rows).map((a) => ({
-      total: sumAvg(a.scores),
-      scored: a.scores.length > 0,
-    }));
-  }
+    inSameGroup(rows, application);
 
   let audioMemberCount = 0;
   if (tab === "audio") {
@@ -114,15 +96,7 @@ export default async function RoundDetailPage({
           <ReportTab scores={application.scores} pieces={parseList(application.pieces)} />
         )}
         {tab === "ranking" && (
-          <RankingTab
-            groupLabel={`${application.targetSchool} · ${myMajors.join("/")} · ${round.roundNo}차`}
-            optedIn={application.rankingOptIn}
-            roundOpen={round.isOpen}
-            applicationId={application.id}
-            members={rankingMembers}
-            myTotal={sumAvg(application.scores)}
-            myScored={application.scores.length > 0}
-          />
+          <RankingTab roundId={round.id} applicationId={application.id} />
         )}
         {tab === "media" && <MediaTab media={application.media} />}
         {tab === "audio" && (
@@ -258,88 +232,7 @@ function ReportTab({
   );
 }
 
-/* ---------- 탭 03 그룹랭킹 (캡처 8) ---------- */
-function RankingTab({
-  groupLabel,
-  optedIn,
-  roundOpen,
-  applicationId,
-  members,
-  myTotal,
-  myScored,
-}: {
-  groupLabel: string;
-  optedIn: boolean;
-  roundOpen: boolean;
-  applicationId: string;
-  members: { total: number; scored: boolean }[];
-  myTotal: number;
-  myScored: boolean;
-}) {
-  const state = rankingState(members.length, roundOpen);
-  const scoredTotals = members.filter((m) => m.scored).map((m) => m.total);
-
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm text-ink/50">내 그룹 (지망학교 × 전공 × 회차)</p>
-          <p className="font-bold text-primary">{groupLabel}</p>
-        </div>
-        <OptInButton
-          optedIn={optedIn}
-          disabled={!roundOpen && !optedIn}
-          action={toggleRankingOptIn.bind(null, applicationId)}
-        />
-      </div>
-
-      {/* 상태 배지 — 시간마감 vs 인원미달 구분 */}
-      {!optedIn ? (
-        <Badge tone="muted">그룹랭킹에 아직 참여하지 않았습니다. 참여 신청 시 같은 그룹 인원 집계에 포함됩니다.</Badge>
-      ) : state === "open" ? (
-        myScored ? (
-          <div className="rounded-card bg-primary/5 p-6 text-center">
-            <Trophy className="mx-auto h-8 w-8 text-accent" />
-            <p className="mt-2 text-sm text-ink/60">내 그룹 내 위치</p>
-            <p className="text-3xl font-bold text-primary">
-              상위 {percentileTop(myTotal, scoredTotals)}%
-            </p>
-            <p className="mt-1 text-xs text-ink/50">
-              집계 인원 {members.length}명 · 본인에게만 표시됩니다.
-            </p>
-          </div>
-        ) : (
-          <Badge tone="muted">채점이 완료되면 내 순위(백분위)가 표시됩니다.</Badge>
-        )
-      ) : state === "recruiting" ? (
-        <Badge tone="accent">
-          모집 중 — 현재 {members.length}/{RANKING_MIN}명. 공개 기준({RANKING_MIN}명) 도달 시 순위가 공개됩니다.
-        </Badge>
-      ) : (
-        <Badge tone="coral">
-          인원 미달 마감 — 지망학교 그룹 인원이 공개 기준({RANKING_MIN}명)에 미달하여 그룹랭킹이 제공되지 않습니다.
-        </Badge>
-      )}
-
-      <div>
-        <p className="mb-2 font-medium">그룹랭킹 제도</p>
-        <ul className="space-y-1 text-sm text-ink/70">
-          <li>· 같은 지망학교·전공·회차 지원자끼리 상대적 위치를 확인합니다.</li>
-          <li>· 개인정보 보호를 위해 그룹 인원이 {RANKING_MIN}명 이상일 때만 공개됩니다.</li>
-          <li>· 순위는 본인에게만 백분위로 표시되며 다른 참가자에게는 공개되지 않습니다.</li>
-        </ul>
-      </div>
-      <div>
-        <p className="mb-2 font-medium">참여 방법</p>
-        <ol className="space-y-1 text-sm text-ink/70">
-          <li>1. 이 탭에서 &lsquo;참여 신청&rsquo;을 누릅니다. (회차 마감 전까지)</li>
-          <li>2. 같은 그룹 참여자가 {RANKING_MIN}명 이상 모이면 집계가 시작됩니다.</li>
-          <li>3. 채점 완료 후 내 백분위 순위가 이 화면에 표시됩니다.</li>
-        </ol>
-      </div>
-    </div>
-  );
-}
+/* ---------- 탭 03 그룹랭킹 → components/my/RankingTab.tsx (GET /api/ranking) ---------- */
 
 /* ---------- 탭 04 영상보관함 (캡처 9) ---------- */
 function MediaTab({
@@ -472,19 +365,4 @@ function AudioTab({
       </div>
     </div>
   );
-}
-
-function Badge({
-  children,
-  tone,
-}: {
-  children: React.ReactNode;
-  tone: "muted" | "accent" | "coral";
-}) {
-  const cls = {
-    muted: "bg-surface text-ink/70",
-    accent: "bg-accent/10 text-accent",
-    coral: "bg-coral/10 text-coral",
-  }[tone];
-  return <p className={`rounded-btn px-4 py-3 text-sm ${cls}`}>{children}</p>;
 }
