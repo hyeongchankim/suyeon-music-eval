@@ -1,0 +1,106 @@
+// 6. 데이터 모델 — 개발 단계 SQLite 연결
+// 주의: SQLite 는 Prisma 스칼라 리스트(String[])를 지원하지 않으므로
+//       majors / pieces 는 JSON 문자열로 저장한다. (Phase 2에서 Postgres 이전 시 String[] 로 전환)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id           String   @id @default(cuid())
+  loginId      String   @unique // 참가자ID (영문+숫자)
+  name         String
+  phone        String
+  email        String
+  passwordHash String? // 선택 설정
+  loginCount   Int      @default(0) // 5.3 — 3회 이상 로그인 시 비밀번호 설정 유도
+  createdAt    DateTime @default(now())
+  applications Application[]
+}
+
+model Round {
+  id            String   @id @default(cuid())
+  term          String // 예: "피아노 Season I"
+  roundNo       Int // 1차, 2차 ...
+  date          DateTime
+  venue         String
+  venueAddress  String
+  isOpen        Boolean  @default(true)
+  arrivalNotice String? // 도착공지 텍스트/링크
+  applications  Application[]
+}
+
+model Application {
+  id               String   @id @default(cuid())
+  studentId        String
+  roundId          String
+  majors           String // JSON 배열 문자열 (다중선택)
+  advisorName      String?
+  targetSchool     String
+  pieceCount       Int
+  pieces           String // JSON 배열 문자열 (곡명1~5)
+  wantsScale       Boolean  @default(false)
+  wantsBlind       Boolean  @default(false)
+  wantsScoreReview Boolean  @default(false)
+  preferredTime    String?
+  questionForJudge String?
+  agreedNotice     Boolean  @default(false)
+  eventNickname    String?
+  rankingOptIn     Boolean  @default(false)
+  audioOptIn       Boolean  @default(false)
+  status           String   @default("접수") // 접수/확정/취소
+  createdAt        DateTime @default(now())
+
+  student  Student      @relation(fields: [studentId], references: [id])
+  round    Round        @relation(fields: [roundId], references: [id])
+  scores   Score[]
+  selfNote SelfNote?
+  media    MediaAsset[]
+}
+
+model Score {
+  id            String @id @default(cuid())
+  applicationId String
+  pieceNo       Int
+  judge1        Float?
+  judge2        Float?
+  judge3        Float?
+  average       Float?
+  reportFileUrl String? // PDF 링크
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+model SelfNote {
+  id            String   @id @default(cuid())
+  applicationId String   @unique
+  goodPoints    String?
+  improvePoints String?
+  nextPractice  String?
+  updatedAt     DateTime @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+model MediaAsset {
+  id            String    @id @default(cuid())
+  applicationId String
+  type          String // "feedback" | "performance" | "audio"
+  url           String
+  downloadable  Boolean   @default(false)
+  expiresAt     DateTime? // 예: 업로드 + 15일
+
+  application Application @relation(fields: [applicationId], references: [id])
+}
+
+model AdminUser {
+  id           String @id @default(cuid())
+  email        String @unique
+  passwordHash String
+  role         String @default("staff")
+}
