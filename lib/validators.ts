@@ -65,6 +65,6 @@ export const loginSchema = z.object({
 });
 
 export const adminLoginSchema = z.object({
-  email: z.string().trim().email("이메일 형식이 올바르지 않습니다"),
+  username: z.string().trim().min(1, "아이디를 입력하세요"),
   password: z.string().min(1, "비밀번호를 입력하세요"),
 });

@@ -10,7 +10,7 @@ export interface StudentSession {
 
 export interface AdminSession {
   adminId?: string;
-  email?: string;
+  username?: string;
   role?: string;
 }
 

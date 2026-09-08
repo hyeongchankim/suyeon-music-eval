@@ -23,8 +23,8 @@ export default function AdminLoginPage() {
         <h1 className="text-xl font-bold">관리자 로그인</h1>
         <form action={formAction} className="mt-6 space-y-4">
           <div>
-            <label className="label">이메일</label>
-            <input name="email" type="email" className="field" required />
+            <label className="label">아이디</label>
+            <input name="username" type="text" autoComplete="username" className="field" required />
           </div>
           <div>
             <label className="label">비밀번호</label>

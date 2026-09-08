@@ -88,7 +88,7 @@ npm run dev
 
 | 구분 | 경로 | 아이디 | 비밀번호 |
 |---|---|---|---|
-| 관리자 | `/admin/login` | `admin@suyeon.test` | `admin1234` |
+| 관리자 | `/admin/login` | `admin` | `admin` |
 | 데모 학생 | `/login` | `demo01` | `demo1234` |
 
 ---

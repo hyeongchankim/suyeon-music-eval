@@ -6,11 +6,11 @@ const db = new PrismaClient();
 async function main() {
   // 관리자 (5.5)
   await db.adminUser.upsert({
-    where: { email: "admin@suyeon.test" },
-    update: {},
+    where: { username: "admin" },
+    update: { passwordHash: await bcrypt.hash("admin", 10) },
     create: {
-      email: "admin@suyeon.test",
-      passwordHash: await bcrypt.hash("admin1234", 10),
+      username: "admin",
+      passwordHash: await bcrypt.hash("admin", 10),
       role: "staff",
     },
   });
@@ -102,7 +102,7 @@ async function main() {
     });
   }
 
-  console.log("seed 완료: admin@suyeon.test / admin1234, 학생 demo01 / demo1234");
+  console.log("seed 완료: 관리자 admin / admin, 학생 demo01 / demo1234");
 }
 
 main()

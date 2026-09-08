@@ -100,7 +100,7 @@ model MediaAsset {
 
 model AdminUser {
   id           String @id @default(cuid())
-  email        String @unique
+  username     String @unique // 관리자 로그인 아이디
   passwordHash String
   role         String @default("staff")
 }

@@ -9,19 +9,19 @@ import { adminLoginSchema } from "@/lib/validators";
 
 export async function adminLogin(_prev: unknown, formData: FormData) {
   const parsed = adminLoginSchema.safeParse({
-    email: formData.get("email"),
+    username: formData.get("username"),
     password: formData.get("password"),
   });
   if (!parsed.success) return { error: "입력값을 확인하세요" };
 
-  const admin = await db.adminUser.findUnique({ where: { email: parsed.data.email } });
+  const admin = await db.adminUser.findUnique({ where: { username: parsed.data.username } });
   if (!admin || !(await bcrypt.compare(parsed.data.password, admin.passwordHash))) {
-    return { error: "이메일 또는 비밀번호가 올바르지 않습니다" };
+    return { error: "아이디 또는 비밀번호가 올바르지 않습니다" };
   }
 
   const session = await getAdminSession();
   session.adminId = admin.id;
-  session.email = admin.email;
+  session.username = admin.username;
   session.role = admin.role;
   await session.save();
   redirect("/admin");
