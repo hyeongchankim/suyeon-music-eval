@@ -9,7 +9,7 @@ export const applicationSchema = z
     name: z.string().trim().min(1, "참가자명을 입력하세요"),
     advisorName: z.string().trim().optional().or(z.literal("")),
     majors: z.array(z.enum(MAJORS)).min(1, "전공을 1개 이상 선택하세요"),
-    roundId: z.string().min(1, "참가 희망 회차를 선택하세요"),
+    roundIds: z.array(z.string()).min(1, "참가 희망 회차를 1개 이상 선택하세요"),
     targetSchool: z.string().trim().min(1, "희망 목표(지망학교)를 입력하세요"),
     pieceCount: z.coerce.number().int().min(1).max(5),
     pieces: z.array(z.string().trim()).min(1),

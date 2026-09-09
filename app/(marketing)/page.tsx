@@ -8,7 +8,7 @@ import {
   Music4,
 } from "lucide-react";
 import { db } from "@/lib/db";
-import { formatRoundDate, ddayLabel } from "@/lib/format";
+import { formatRoundDate, ddayLabel, parseList } from "@/lib/format";
 import TestimonialSlider from "@/components/marketing/TestimonialSlider";
 
 export const dynamic = "force-dynamic";
@@ -66,13 +66,20 @@ export default async function LandingPage() {
                 </Link>
               </div>
               {nextRound && (
-                <p className="mt-6 inline-flex items-center gap-2 rounded-btn bg-bg px-4 py-2 text-sm text-ink/80 shadow-card">
-                  다음 회차: {formatRoundDate(nextRound.date)} · {nextRound.term}{" "}
-                  {nextRound.roundNo}차
-                  <span className="font-bold text-coral">
-                    {ddayLabel(nextRound.date)}
+                <div className="mt-6 inline-flex flex-col gap-1 rounded-btn bg-bg px-4 py-2 text-sm text-ink/80 shadow-card">
+                  <span className="inline-flex items-center gap-2">
+                    다음 회차: {formatRoundDate(nextRound.date)} · {nextRound.term}{" "}
+                    {nextRound.roundNo}차
+                    <span className="font-bold text-coral">
+                      {ddayLabel(nextRound.date)}
+                    </span>
                   </span>
-                </p>
+                  {parseList(nextRound.majors).length > 0 && (
+                    <span className="text-xs text-ink/55">
+                      응시 가능 전공: {parseList(nextRound.majors).join(" · ")}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>

@@ -24,9 +24,12 @@ export async function POST(req: Request) {
   }
   const d = parsed.data;
 
-  const round = await db.round.findUnique({ where: { id: d.roundId } });
-  if (!round || !round.isOpen) {
-    return NextResponse.json({ error: "신청할 수 없는 회차입니다" }, { status: 400 });
+  const rounds = await db.round.findMany({ where: { id: { in: d.roundIds } } });
+  if (rounds.length !== d.roundIds.length || rounds.some((r) => !r.isOpen)) {
+    return NextResponse.json(
+      { error: "신청할 수 없는 회차가 포함되어 있습니다" },
+      { status: 400 },
+    );
   }
 
   const passwordHash = await bcrypt.hash(d.password, 10);
@@ -49,23 +52,27 @@ export async function POST(req: Request) {
     });
   }
 
-  const application = await db.application.create({
-    data: {
-      studentId: student.id,
-      roundId: d.roundId,
-      majors: JSON.stringify(d.majors),
-      advisorName: d.advisorName || null,
-      targetSchool: d.targetSchool,
-      pieceCount: d.pieceCount,
-      pieces: JSON.stringify(d.pieces.slice(0, d.pieceCount)),
-      wantsScale: d.wantsScale,
-      wantsBlind: d.wantsBlind,
-      wantsScoreReview: d.wantsScoreReview,
-      preferredTime: d.preferredTime || null,
-      questionForJudge: d.questionForJudge || null,
-      agreedNotice: d.agreedNotice,
-    },
-  });
+  const common = {
+    studentId: student.id,
+    majors: JSON.stringify(d.majors),
+    advisorName: d.advisorName || null,
+    targetSchool: d.targetSchool,
+    pieceCount: d.pieceCount,
+    pieces: JSON.stringify(d.pieces.slice(0, d.pieceCount)),
+    wantsScale: d.wantsScale,
+    wantsBlind: d.wantsBlind,
+    wantsScoreReview: d.wantsScoreReview,
+    preferredTime: d.preferredTime || null,
+    questionForJudge: d.questionForJudge || null,
+    agreedNotice: d.agreedNotice,
+  };
 
-  return NextResponse.json({ id: application.id });
+  // 선택한 회차마다 신청서 1건씩 생성
+  const created = await db.$transaction(
+    rounds.map((r) =>
+      db.application.create({ data: { ...common, roundId: r.id } }),
+    ),
+  );
+
+  return NextResponse.json({ id: created[0].id, count: created.length });
 }

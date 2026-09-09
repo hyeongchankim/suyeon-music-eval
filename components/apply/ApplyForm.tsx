@@ -17,7 +17,7 @@ type Round = {
 };
 
 const STEP_FIELDS: (keyof ApplicationInput)[][] = [
-  ["name", "advisorName", "majors", "roundId", "targetSchool", "pieceCount", "pieces"],
+  ["name", "advisorName", "majors", "roundIds", "targetSchool", "pieceCount", "pieces"],
   ["wantsScale", "wantsBlind", "wantsScoreReview", "preferredTime", "questionForJudge"],
   ["loginId", "phone", "email", "password", "passwordConfirm", "agreedNotice", "agreePrivacy"],
 ];
@@ -40,6 +40,7 @@ export default function ApplyForm({ rounds }: { rounds: Round[] }) {
     resolver: zodResolver(applicationSchema) as Resolver<ApplicationInput>,
     defaultValues: {
       majors: [],
+      roundIds: [],
       pieceCount: 1,
       pieces: [],
       wantsScale: false,
@@ -53,11 +54,15 @@ export default function ApplyForm({ rounds }: { rounds: Round[] }) {
 
   const pieceCount = Number(watch("pieceCount") || 1);
 
-  // 선택한 회차의 응시 가능 전공만 노출 (회차 미선택 또는 미지정이면 전체)
-  const selectedRoundId = watch("roundId");
-  const selectedRound = rounds.find((r) => r.id === selectedRoundId);
+  // 선택한 회차들에서 공통으로 응시 가능한 전공만 노출
+  // (회차 미선택, 또는 선택한 회차 중 전공 미지정이 있으면 제약 없음)
+  const selectedRoundIds = (watch("roundIds") ?? []) as string[];
+  const selectedRounds = rounds.filter((r) => selectedRoundIds.includes(r.id));
+  const constraining = selectedRounds.filter((r) => r.majors.length > 0);
   const allowedMajors: readonly string[] =
-    selectedRound && selectedRound.majors.length > 0 ? selectedRound.majors : MAJORS;
+    constraining.length === 0
+      ? MAJORS
+      : MAJORS.filter((m) => constraining.every((r) => r.majors.includes(m)));
 
   useEffect(() => {
     const current = (getValues("majors") ?? []) as string[];
@@ -66,7 +71,7 @@ export default function ApplyForm({ rounds }: { rounds: Round[] }) {
       setValue("majors", pruned as ApplicationInput["majors"]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRoundId]);
+  }, [selectedRoundIds.join(",")]);
 
   async function next() {
     const ok = await trigger(STEP_FIELDS[step]);
@@ -93,8 +98,8 @@ export default function ApplyForm({ rounds }: { rounds: Round[] }) {
       setSubmitError(j.error ?? "제출 중 오류가 발생했습니다");
       return;
     }
-    const { id } = await res.json();
-    router.push(`/apply/complete?no=${id}`);
+    const { id, count } = await res.json();
+    router.push(`/apply/complete?no=${id}&count=${count ?? 1}`);
   }
 
   const err = (name: string) =>
@@ -138,28 +143,35 @@ export default function ApplyForm({ rounds }: { rounds: Round[] }) {
                 전공 <span className="text-coral">*</span>{" "}
                 <span className="font-normal text-ink/50">(복수선택 가능)</span>
               </p>
-              {selectedRound && (
+              {selectedRounds.length > 0 && (
                 <p className="mb-1.5 text-xs text-ink/50">
-                  선택한 회차에서 응시 가능한 전공만 표시됩니다.
+                  선택한 회차에서 공통으로 응시 가능한 전공만 표시됩니다.
                 </p>
               )}
-              <div className="flex flex-wrap gap-2">
-                {allowedMajors.map((m) => (
-                  <label
-                    key={m}
-                    className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-btn border border-line px-4 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
-                  >
-                    <input type="checkbox" value={m} {...register("majors")} />
-                    {m}
-                  </label>
-                ))}
-              </div>
+              {selectedRounds.length > 0 && allowedMajors.length === 0 ? (
+                <p className="text-sm text-coral">
+                  선택한 회차들의 공통 전공이 없습니다. 회차 선택을 조정하세요.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {allowedMajors.map((m) => (
+                    <label
+                      key={m}
+                      className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-btn border border-line px-4 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                    >
+                      <input type="checkbox" value={m} {...register("majors")} />
+                      {m}
+                    </label>
+                  ))}
+                </div>
+              )}
               {err("majors") && <ErrorText>{err("majors")}</ErrorText>}
             </div>
 
             <div>
               <p className="label">
-                참가 희망 회차 <span className="text-coral">*</span>
+                참가 희망 회차 <span className="text-coral">*</span>{" "}
+                <span className="font-normal text-ink/50">(복수선택 가능)</span>
               </p>
               <div className="space-y-2">
                 {rounds.length === 0 && (
@@ -170,17 +182,27 @@ export default function ApplyForm({ rounds }: { rounds: Round[] }) {
                 {rounds.map((r) => (
                   <label
                     key={r.id}
-                    className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-btn border border-line px-4 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                    className="flex min-h-[44px] cursor-pointer items-start gap-3 rounded-btn border border-line px-4 py-2 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
                   >
-                    <input type="radio" value={r.id} {...register("roundId")} />
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      value={r.id}
+                      {...register("roundIds")}
+                    />
                     <span>
                       {formatRoundDate(new Date(r.date))} · {r.term} {r.roundNo}차 —{" "}
                       {r.venue}
+                      {r.majors.length > 0 && (
+                        <span className="block text-xs text-ink/50">
+                          응시 가능 전공: {r.majors.join(", ")}
+                        </span>
+                      )}
                     </span>
                   </label>
                 ))}
               </div>
-              {err("roundId") && <ErrorText>{err("roundId")}</ErrorText>}
+              {err("roundIds") && <ErrorText>{err("roundIds")}</ErrorText>}
             </div>
 
             <Field

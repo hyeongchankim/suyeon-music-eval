@@ -6,16 +6,20 @@ export const metadata = { title: "신청 완료 · 수연음악학원" };
 export default function ApplyCompletePage({
   searchParams,
 }: {
-  searchParams: { no?: string };
+  searchParams: { no?: string; count?: string };
 }) {
+  const count = Number(searchParams.count ?? 1);
   return (
     <div className="mx-auto max-w-form px-5 py-section-m sm:py-section">
       <div className="card p-8 text-center">
         <CheckCircle2 className="mx-auto h-14 w-14 text-accent" />
-        <h1 className="mt-4 text-2xl font-bold">신청이 접수되었습니다</h1>
+        <h1 className="mt-4 text-2xl font-bold">
+          {count > 1 ? `${count}개 회차 신청이 접수되었습니다` : "신청이 접수되었습니다"}
+        </h1>
         {searchParams.no && (
           <p className="mt-2 text-sm text-ink/60">
             신청번호: <span className="font-mono font-semibold">{searchParams.no}</span>
+            {count > 1 && " 외"}
           </p>
         )}
         <p className="mt-4 text-[15px] text-ink/80">

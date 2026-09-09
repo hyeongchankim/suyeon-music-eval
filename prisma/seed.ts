@@ -85,6 +85,35 @@ async function main() {
     },
   });
 
+  // 추가 회차 2~4 (예정, 열림) — 회차별 응시 전공 다양화
+  const moreRounds: {
+    id: string;
+    roundNo: number;
+    date: string;
+    majors: string[];
+  }[] = [
+    { id: "seed-round-2", roundNo: 2, date: "2026-10-11T10:00:00+09:00", majors: ["피아노", "성악", "현악"] },
+    { id: "seed-round-3", roundNo: 3, date: "2026-11-08T10:00:00+09:00", majors: ["피아노", "관악", "작곡"] },
+    { id: "seed-round-4", roundNo: 4, date: "2026-12-06T10:00:00+09:00", majors: MAJORS },
+  ];
+  for (const r of moreRounds) {
+    await db.round.upsert({
+      where: { id: r.id },
+      update: { majors: JSON.stringify(r.majors) },
+      create: {
+        id: r.id,
+        term: "피아노 Season I",
+        roundNo: r.roundNo,
+        date: new Date(r.date),
+        venue: "수연음악학원 대강당",
+        venueAddress: "서울시 서초구 반포대로 00, 3층",
+        majors: JSON.stringify(r.majors),
+        isOpen: true,
+        arrivalNotice: "입실시간: 오전 9:30 / 주차: 건물 지하 1~2층 (2시간 무료)",
+      },
+    });
+  }
+
   // 데모 학생 (마이페이지/리포트 확인용)
   const demo = await db.student.upsert({
     where: { loginId: "demo01" },
