@@ -134,6 +134,7 @@ async function main() {
     advisorName: "이지도",
     status: "확정",
   });
+  await db.application.update({ where: { id: demoApp.id }, data: { paid: true } });
   await setScores(demoApp.id, [
     [88, 90, 86, 92, 84],
     [91, 89, 92, 87, 90],
@@ -237,6 +238,11 @@ async function main() {
       pieceCount: d.pieces.length,
       pieces: JSON.stringify(d.pieces),
       status: "확정",
+    });
+    // 더미 절반만 입금 확인된 상태로
+    await db.application.update({
+      where: { id: app.id },
+      data: { paid: i % 2 === 0 },
     });
     await setScores(app.id, d.scores);
   }

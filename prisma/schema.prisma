@@ -55,6 +55,7 @@ model Application {
   rankingOptIn     Boolean  @default(false)
   audioOptIn       Boolean  @default(false)
   status           String   @default("접수") // 접수/확정/취소
+  paid             Boolean  @default(false) // 입금 확인
   createdAt        DateTime @default(now())
 
   student  Student      @relation(fields: [studentId], references: [id])

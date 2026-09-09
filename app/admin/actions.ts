@@ -85,6 +85,13 @@ export async function setApplicationStatus(id: string, status: string) {
   revalidatePath("/admin/applications");
 }
 
+// /admin/applications — 입금 확인 토글
+export async function setApplicationPaid(id: string, paid: boolean) {
+  await requireAdmin();
+  await db.application.update({ where: { id }, data: { paid } });
+  revalidatePath("/admin/applications");
+}
+
 // /admin/members — 인원(참가자) 관리
 export async function updateMember(id: string, formData: FormData) {
   await requireAdmin();
