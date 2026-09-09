@@ -8,10 +8,17 @@ import {
   Music4,
 } from "lucide-react";
 import { db } from "@/lib/db";
-import { formatRoundDate, ddayLabel, parseList } from "@/lib/format";
+import { formatRoundDate, ddayLabel } from "@/lib/format";
 import TestimonialSlider from "@/components/marketing/TestimonialSlider";
 
 export const dynamic = "force-dynamic";
+
+const COURSES = [
+  { name: "피아노", bg: "/piano2.jpeg" },
+  { name: "성악", bg: "/vocal1.jpeg" },
+  { name: "현악", bg: "/string1.jpeg" },
+  { name: "관악", bg: "/windinstrument2.jpeg" },
+];
 
 const FEATURES = [
   { icon: Mic2, title: "실전 무대 평가", desc: "입시 현장과 동일한 동선·조명·긴장감 속에서 연주합니다." },
@@ -27,18 +34,6 @@ export default async function LandingPage() {
     where: { isOpen: true, date: { gte: new Date() } },
     orderBy: { date: "asc" },
   });
-  const courses = await db.round.findMany({
-    where: { isOpen: true },
-    orderBy: { date: "asc" },
-  });
-  const majorsForCourses = Array.from(
-    new Set(
-      (
-        await db.application.findMany({ select: { majors: true } })
-      ).flatMap((a) => parseList(a.majors)),
-    ),
-  );
-  const courseTypes = majorsForCourses.length ? majorsForCourses : ["피아노"];
 
   return (
     <>
@@ -50,45 +45,36 @@ export default async function LandingPage() {
             aria-hidden
             className="absolute inset-0 -z-10 bg-[url('/main2.jpeg')] bg-cover bg-center opacity-40"
           />
-          <div className="mx-auto grid max-w-content gap-10 px-5 py-section-m sm:py-section lg:grid-cols-2 lg:items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-primary sm:text-4xl lg:text-5xl">
-              당신의 무대는,
-              <br />
-              실전처럼.
-            </h1>
-            <p className="mt-5 text-base text-ink/80 sm:text-lg">
-              입시 현장과 같은 환경에서 미리 평가받고,{" "}
-              <br className="hidden sm:block" />
-              솔직한 피드백으로 다음 무대를 준비하세요.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/apply" className="btn-accent">
-                모의평가 신청하기
-              </Link>
-              <Link href="/login" className="btn-ghost">
-                결과 조회 로그인
-              </Link>
-            </div>
-            {nextRound && (
-              <p className="mt-6 inline-flex items-center gap-2 rounded-btn bg-bg px-4 py-2 text-sm text-ink/80 shadow-card">
-                다음 회차: {formatRoundDate(nextRound.date)} · {nextRound.term}{" "}
-                {nextRound.roundNo}차
-                <span className="font-bold text-coral">
-                  {ddayLabel(nextRound.date)}
-                </span>
+          <div className="mx-auto max-w-content px-5 py-section-m sm:py-section">
+            <div className="max-w-2xl">
+              <h1 className="text-3xl font-bold text-primary sm:text-4xl lg:text-5xl">
+                당신의 무대는,
+                <br />
+                실전처럼.
+              </h1>
+              <p className="mt-5 text-base text-ink/80 sm:text-lg">
+                입시 현장과 같은 환경에서 미리 평가받고,{" "}
+                <br className="hidden sm:block" />
+                솔직한 피드백으로 다음 무대를 준비하세요.
               </p>
-            )}
-          </div>
-          <div className="hidden lg:block">
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-card">
-              <div className="absolute -left-10 top-6 h-56 w-56 rounded-full bg-accent/25 blur-3xl" />
-              <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
-              <div className="card relative flex h-full items-center justify-center">
-                <Music4 className="h-24 w-24 text-primary/40" />
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link href="/apply" className="btn-accent">
+                  모의평가 신청하기
+                </Link>
+                <Link href="/login" className="btn-ghost">
+                  결과 조회 로그인
+                </Link>
               </div>
+              {nextRound && (
+                <p className="mt-6 inline-flex items-center gap-2 rounded-btn bg-bg px-4 py-2 text-sm text-ink/80 shadow-card">
+                  다음 회차: {formatRoundDate(nextRound.date)} · {nextRound.term}{" "}
+                  {nextRound.roundNo}차
+                  <span className="font-bold text-coral">
+                    {ddayLabel(nextRound.date)}
+                  </span>
+                </p>
+              )}
             </div>
-          </div>
           </div>
         </div>
       </section>
@@ -97,22 +83,31 @@ export default async function LandingPage() {
       <section className="mx-auto max-w-content px-5 py-section-m sm:py-section">
         <h2 className="text-2xl font-bold sm:text-3xl">과정 소개</h2>
         <p className="mt-2 text-ink/70">현재 운영 중인 모의평가 과정입니다.</p>
-        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {courseTypes.map((type) => (
-            <div key={type} className="card p-6">
-              <p className="text-lg font-bold text-primary">{type}</p>
-              <p className="mt-1 text-sm text-ink/70">피아노 Season I</p>
-              <ul className="mt-4 space-y-1 text-sm text-ink/80">
-                {courses.map((r) => (
-                  <li key={r.id}>
-                    · {formatRoundDate(r.date)} {r.roundNo}차 — {r.venue}
-                  </li>
-                ))}
-                {courses.length === 0 && <li>· 다음 회차 준비 중</li>}
-              </ul>
-              <Link href="/apply" className="btn-primary mt-6 w-full">
-                신청하기
-              </Link>
+        <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {COURSES.map((c) => (
+            <div
+              key={c.name}
+              className="group relative isolate flex min-h-[380px] flex-col justify-end overflow-hidden rounded-card border border-line shadow-card"
+            >
+              <div
+                aria-hidden
+                className="absolute inset-0 -z-10 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
+                style={{ backgroundImage: `url(${c.bg})` }}
+              />
+              <div
+                aria-hidden
+                className="absolute inset-0 -z-10 bg-gradient-to-t from-black/80 via-black/30 to-black/5"
+              />
+              <div className="p-6 text-white">
+                <p className="text-xl font-bold">{c.name}</p>
+                <p className="mt-1 text-sm text-white/75">{c.name} 입시 모의평가</p>
+                <Link
+                  href="/apply"
+                  className="btn mt-5 w-full bg-white text-primary hover:bg-white/90"
+                >
+                  신청하기
+                </Link>
+              </div>
             </div>
           ))}
         </div>
