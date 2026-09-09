@@ -1,13 +1,13 @@
-// 6. 데이터 모델 — 개발 단계 SQLite 연결
-// 주의: SQLite 는 Prisma 스칼라 리스트(String[])를 지원하지 않으므로
-//       majors / pieces 는 JSON 문자열로 저장한다. (Phase 2에서 Postgres 이전 시 String[] 로 전환)
+// 6. 데이터 모델 — PostgreSQL (Vercel 배포 및 로컬 개발 공통)
+// 참고: majors / pieces 는 JSON 문자열로 저장한다 (SQLite 시절 호환 유지, parseList 로 파싱).
+//       필요 시 String[] 로 전환 가능하나 현재는 유지.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

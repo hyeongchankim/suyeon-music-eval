@@ -3,7 +3,7 @@
 입시 모의평가 접수 · 결과 조회 웹사이트.
 
 **스택**: Next.js 14 (App Router) · TypeScript · TailwindCSS · Prisma · iron-session
-**DB**: 개발은 SQLite, 배포 시 PostgreSQL 전환 예정
+**DB**: PostgreSQL (로컬·배포 공통) — Vercel 배포는 아래 [Vercel 배포](#vercel-배포) 참고
 
 ---
 
@@ -50,31 +50,28 @@ cp .env.example .env
 
 `.env` 항목:
 
-| 키 | 설명 | 개발 기본값 |
-|---|---|---|
-| `DATABASE_URL` | Prisma 접속 문자열. 개발은 프로젝트 루트의 SQLite 파일 | `file:./dev.db` |
-| `SESSION_PASSWORD` | iron-session 쿠키 암호화 키. **32자 이상** 필수 | 임의 문자열로 교체 |
+| 키 | 설명 |
+|---|---|
+| `DATABASE_URL` | PostgreSQL 연결 문자열 (`postgresql://user:pw@host/db?sslmode=require`). 무료 옵션: [Neon](https://neon.tech) 또는 [Supabase](https://supabase.com) |
+| `SESSION_PASSWORD` | iron-session 쿠키 암호화 키. **32자 이상** 필수 |
+
+로컬 개발용 DB 는 Neon 프로젝트를 하나 만들어 그 연결 문자열을 그대로 쓰면 됩니다.
+(Docker 로 로컬 Postgres 를 띄워도 됩니다: `docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=pw postgres:16` → `DATABASE_URL="postgresql://postgres:pw@localhost:5432/postgres"`)
 
 `SESSION_PASSWORD` 생성 예시:
 
 ```bash
-# macOS / Linux
 openssl rand -base64 32
-
-# 아무 OS (Node)
+# 또는
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
-
-출력값을 `.env` 의 `SESSION_PASSWORD=` 에 붙여넣습니다.
 
 ### 4. 데이터베이스 초기화
 
 ```bash
-npm run db:push    # prisma/schema.prisma → SQLite(dev.db) 에 테이블 생성
-npm run db:seed    # 관리자 계정 · 회차 2건 · 데모 학생/신청/점수/영상 생성
+npm run db:push    # prisma/schema.prisma → DB 에 테이블 생성
+npm run db:seed    # 관리자/회차/데모·더미 학생/점수 생성
 ```
-
-`dev.db` 파일이 프로젝트 루트에 생성됩니다. (git 무시됨)
 
 ### 5. 개발 서버 실행
 
@@ -144,6 +141,54 @@ npx prisma generate    # 타입 재생성 (db:push 가 대개 자동 실행)
 
 ---
 
+## Vercel 배포
+
+이 저장소는 Vercel 에 바로 배포할 수 있게 준비되어 있습니다.
+빌드 명령은 `package.json` 의 `vercel-build` 스크립트를 사용합니다:
+
+```
+prisma generate && prisma db push && prisma db seed && next build
+```
+
+= 배포할 때마다 스키마를 DB 에 반영하고 시드 데이터를 넣은 뒤 빌드합니다.
+(시드는 upsert 기반이라 반복 실행해도 안전합니다. 운영 전환 시 `prisma db seed` 부분을 빼세요.)
+
+### 1) PostgreSQL 준비
+
+[Neon](https://neon.tech) 에서 프로젝트를 만들고 **connection string** 을 복사합니다.
+(Supabase 를 쓸 경우 마이그레이션/`db push` 는 pooler 가 아닌 **Direct connection** 문자열을 사용해야 합니다.)
+
+### 2) Vercel 프로젝트 생성
+
+1. https://vercel.com → **Add New… → Project** → GitHub 저장소 `hyeongchankim/suyeon-music-eval` 를 **Import**
+2. Framework Preset 은 자동으로 **Next.js** 로 잡힙니다. Build/Output 설정은 그대로 둡니다.
+3. **Environment Variables** 에 추가:
+
+   | Name | Value |
+   |---|---|
+   | `DATABASE_URL` | 1)에서 복사한 PostgreSQL 문자열 |
+   | `SESSION_PASSWORD` | 32자 이상 임의 문자열 (`openssl rand -base64 32`) |
+
+4. **Deploy** 클릭 → 빌드가 끝나면 `https://<프로젝트>.vercel.app` 로 접속
+
+### 3) 로그인 계정
+
+시드로 생성됩니다 — 관리자 `admin` / `admin`, 데모 학생 `demo01` / `demo1234`
+(외부에 공개되는 데모이므로 필요하면 시드에서 비밀번호를 바꾸세요.)
+
+### CLI 로 배포하려면
+
+```bash
+npm i -g vercel
+vercel login
+vercel            # 최초: 프로젝트 연결 + 프리뷰 배포
+vercel --prod     # 운영 배포
+```
+
+환경변수는 `vercel env add DATABASE_URL` / `vercel env add SESSION_PASSWORD` 로 등록합니다.
+
+---
+
 ## 폴더 구조
 
 ```
@@ -185,15 +230,16 @@ prisma/
 - 그룹랭킹 / 음원공유 자동 집계 · 상호 공유 (`/api/ranking` 은 현재 501 스텁)
 - 영상·음원 파일 업로드 + 만료 정책(presigned URL) + 워터마크
 - 알림톡 / SMS (회차 안내), 온라인 결제
-- PostgreSQL 전환 (아래 참고)
 
-## 배포 전 체크리스트
+## 운영 전환 체크리스트
 
-- [ ] `SESSION_PASSWORD` 를 배포 환경의 안전한 랜덤값으로 교체
-- [ ] `DATABASE_URL` 을 PostgreSQL 로 변경 + `schema.prisma` 의 `provider` 를 `postgresql` 로
-- [ ] SQLite 는 스칼라 리스트를 지원하지 않아 `Application.majors` / `pieces` 를 JSON 문자열로 저장 중 → Postgres 전환 시 `String[]` 로 되돌리고 `parseList()` 제거
+- [ ] `SESSION_PASSWORD` 를 운영 환경의 안전한 랜덤값으로 교체
+- [ ] `vercel-build` 스크립트에서 `prisma db seed` 제거 (데모 데이터 자동 삽입 방지)
+- [ ] 관리자/데모 계정 비밀번호 변경 또는 시드에서 제거
+- [ ] `prisma db push` → 정식 마이그레이션(`prisma migrate`)으로 전환
+- [ ] 서버리스 환경 커넥션 풀링 점검 (Neon/Supabase pooler + `?pgbouncer=true&connection_limit=1`)
+- [ ] `Application.majors` / `pieces` / `roundIds` 는 JSON 문자열 저장 중 → 필요 시 `String[]` 로 전환
 - [ ] 푸터 · 약관 · 개인정보처리방침의 사업자정보(현재 임시값) 실제 값 반영 + 법률 검토
-- [ ] `npm run db:seed` 의 데모 계정/데이터 제거 또는 분리
 
 ## 참고
 
