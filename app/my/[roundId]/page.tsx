@@ -154,6 +154,8 @@ function ReportTab({
     judge1: number | null;
     judge2: number | null;
     judge3: number | null;
+    judge4: number | null;
+    judge5: number | null;
     average: number | null;
     reportFileUrl: string | null;
   }[];
@@ -165,6 +167,16 @@ function ReportTab({
   const total = sumAvg(scores);
   const mean = total / scores.length;
   const pdf = scores.find((s) => s.reportFileUrl)?.reportFileUrl;
+
+  // 실제 점수가 입력된 심사 위원 수만큼만 열 표시 (최소 3)
+  const judgeKeys = ["judge1", "judge2", "judge3", "judge4", "judge5"] as const;
+  const usedJudges = Math.max(
+    3,
+    ...scores.map((s) =>
+      judgeKeys.reduce((n, k, idx) => (s[k] != null ? idx + 1 : n), 0),
+    ),
+  );
+  const cols = judgeKeys.slice(0, usedJudges);
 
   return (
     <div className="space-y-6">
@@ -184,9 +196,11 @@ function ReportTab({
           <thead>
             <tr className="border-b border-line text-left text-ink/50">
               <th className="py-2 pr-4">곡</th>
-              <th className="py-2 pr-4">심사1</th>
-              <th className="py-2 pr-4">심사2</th>
-              <th className="py-2 pr-4">심사3</th>
+              {cols.map((_, idx) => (
+                <th key={idx} className="py-2 pr-4">
+                  심사{idx + 1}
+                </th>
+              ))}
               <th className="py-2">평균</th>
             </tr>
           </thead>
@@ -196,9 +210,11 @@ function ReportTab({
                 <td className="py-2 pr-4">
                   {s.pieceNo}. {pieces[s.pieceNo - 1] ?? "-"}
                 </td>
-                <td className="py-2 pr-4">{s.judge1 ?? "-"}</td>
-                <td className="py-2 pr-4">{s.judge2 ?? "-"}</td>
-                <td className="py-2 pr-4">{s.judge3 ?? "-"}</td>
+                {cols.map((k) => (
+                  <td key={k} className="py-2 pr-4">
+                    {s[k] ?? "-"}
+                  </td>
+                ))}
                 <td className="py-2 font-semibold">{s.average?.toFixed(2) ?? "-"}</td>
               </tr>
             ))}

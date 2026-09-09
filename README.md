@@ -90,6 +90,9 @@ npm run dev
 |---|---|---|---|
 | 관리자 | `/admin/login` | `admin` | `admin` |
 | 데모 학생 | `/login` | `demo01` | `demo1234` |
+| 전공별 더미 학생 | `/login` | `piano01` / `vocal01` / `string01` / `wind01` / `compose01` | `test1234` |
+
+더미 학생 5명은 각자 열린 회차에 신청 + 곡별 5심사 점수가 채워져 있습니다.
 
 ---
 

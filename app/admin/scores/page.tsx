@@ -60,6 +60,8 @@ export default async function AdminScoresPage({
       judge1: s?.judge1?.toString() ?? "",
       judge2: s?.judge2?.toString() ?? "",
       judge3: s?.judge3?.toString() ?? "",
+      judge4: s?.judge4?.toString() ?? "",
+      judge5: s?.judge5?.toString() ?? "",
     };
   });
 

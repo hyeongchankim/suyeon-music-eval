@@ -71,7 +71,9 @@ model Score {
   judge1        Float?
   judge2        Float?
   judge3        Float?
-  average       Float?
+  judge4        Float?
+  judge5        Float?
+  average       Float? // 최고·최저 각 1개 제외 평균 (유효 점수 3개 미만이면 단순 평균)
   reportFileUrl String? // PDF 링크
 
   application Application @relation(fields: [applicationId], references: [id])

@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { trimmedMean } from "@/lib/score";
 
-type Row = { pieceNo: number; judge1: string; judge2: string; judge3: string };
+const JUDGES = ["judge1", "judge2", "judge3", "judge4", "judge5"] as const;
+type JudgeKey = (typeof JUDGES)[number];
+type Row = { pieceNo: number } & Record<JudgeKey, string>;
 
 export default function ScoreForm({
   applicationId,
@@ -24,11 +27,11 @@ export default function ScoreForm({
 
   const num = (s: string) => (s.trim() === "" ? undefined : Number(s));
   const rowAvg = (r: Row) => {
-    const v = [r.judge1, r.judge2, r.judge3].map(num).filter((x): x is number => x != null);
-    return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(2) : "-";
+    const m = trimmedMean(JUDGES.map((k) => num(r[k]) ?? null));
+    return m === null ? "-" : m.toFixed(2);
   };
 
-  function set(i: number, key: keyof Row, value: string) {
+  function set(i: number, key: JudgeKey, value: string) {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [key]: value } : r)));
   }
 
@@ -43,9 +46,7 @@ export default function ScoreForm({
         reportFileUrl: reportUrl,
         rows: rows.map((r) => ({
           pieceNo: r.pieceNo,
-          judge1: num(r.judge1),
-          judge2: num(r.judge2),
-          judge3: num(r.judge3),
+          ...Object.fromEntries(JUDGES.map((k) => [k, num(r[k])])),
         })),
       }),
     });
@@ -60,14 +61,19 @@ export default function ScoreForm({
 
   return (
     <div className="space-y-4">
+      <p className="text-xs text-ink/50">
+        평균은 최고점·최저점 각 1개를 제외하고 계산됩니다. (유효 점수 3개 미만이면 단순 평균)
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line text-left text-ink/50">
               <th className="p-2">곡</th>
-              <th className="p-2">심사1</th>
-              <th className="p-2">심사2</th>
-              <th className="p-2">심사3</th>
+              {JUDGES.map((_, idx) => (
+                <th key={idx} className="p-2">
+                  심사{idx + 1}
+                </th>
+              ))}
               <th className="p-2">평균</th>
             </tr>
           </thead>
@@ -77,10 +83,10 @@ export default function ScoreForm({
                 <td className="p-2">
                   {r.pieceNo}. {pieces[r.pieceNo - 1] ?? "-"}
                 </td>
-                {(["judge1", "judge2", "judge3"] as const).map((k) => (
+                {JUDGES.map((k) => (
                   <td key={k} className="p-2">
                     <input
-                      className="field !min-h-0 w-20 !py-1"
+                      className="field !min-h-0 w-16 !py-1"
                       inputMode="decimal"
                       value={r[k]}
                       onChange={(e) => set(i, k, e.target.value)}
