@@ -44,7 +44,13 @@ export default async function LandingPage() {
     <>
       {/* 히어로 */}
       <section className="bg-surface">
-        <div className="mx-auto grid max-w-content gap-10 px-5 py-section-m sm:py-section lg:grid-cols-2 lg:items-center">
+        <div className="relative isolate overflow-hidden">
+          {/* 배경 이미지 (불투명도 40%) */}
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 bg-[url('/main2.jpeg')] bg-cover bg-center opacity-40"
+          />
+          <div className="mx-auto grid max-w-content gap-10 px-5 py-section-m sm:py-section lg:grid-cols-2 lg:items-center">
           <div>
             <h1 className="text-3xl font-bold text-primary sm:text-4xl lg:text-5xl">
               당신의 무대는,
@@ -82,6 +88,7 @@ export default async function LandingPage() {
                 <Music4 className="h-24 w-24 text-primary/40" />
               </div>
             </div>
+          </div>
           </div>
         </div>
       </section>
