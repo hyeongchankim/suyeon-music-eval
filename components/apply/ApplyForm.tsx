@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ type Round = {
   roundNo: number;
   date: string;
   venue: string;
+  majors: string[]; // 이 회차에서 응시 가능한 전공 (빈 배열이면 전체 허용)
 };
 
 const STEP_FIELDS: (keyof ApplicationInput)[][] = [
@@ -33,6 +34,7 @@ export default function ApplyForm({ rounds }: { rounds: Round[] }) {
     trigger,
     watch,
     getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ApplicationInput>({
     resolver: zodResolver(applicationSchema) as Resolver<ApplicationInput>,
@@ -50,6 +52,21 @@ export default function ApplyForm({ rounds }: { rounds: Round[] }) {
   });
 
   const pieceCount = Number(watch("pieceCount") || 1);
+
+  // 선택한 회차의 응시 가능 전공만 노출 (회차 미선택 또는 미지정이면 전체)
+  const selectedRoundId = watch("roundId");
+  const selectedRound = rounds.find((r) => r.id === selectedRoundId);
+  const allowedMajors: readonly string[] =
+    selectedRound && selectedRound.majors.length > 0 ? selectedRound.majors : MAJORS;
+
+  useEffect(() => {
+    const current = (getValues("majors") ?? []) as string[];
+    const pruned = current.filter((m) => allowedMajors.includes(m));
+    if (pruned.length !== current.length) {
+      setValue("majors", pruned as ApplicationInput["majors"]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoundId]);
 
   async function next() {
     const ok = await trigger(STEP_FIELDS[step]);
@@ -121,8 +138,13 @@ export default function ApplyForm({ rounds }: { rounds: Round[] }) {
                 전공 <span className="text-coral">*</span>{" "}
                 <span className="font-normal text-ink/50">(복수선택 가능)</span>
               </p>
+              {selectedRound && (
+                <p className="mb-1.5 text-xs text-ink/50">
+                  선택한 회차에서 응시 가능한 전공만 표시됩니다.
+                </p>
+              )}
               <div className="flex flex-wrap gap-2">
-                {MAJORS.map((m) => (
+                {allowedMajors.map((m) => (
                   <label
                     key={m}
                     className="flex min-h-[44px] cursor-pointer items-center gap-2 rounded-btn border border-line px-4 has-[:checked]:border-primary has-[:checked]:bg-primary/5"

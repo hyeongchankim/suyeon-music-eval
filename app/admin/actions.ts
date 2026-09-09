@@ -27,7 +27,7 @@ export async function adminLogin(_prev: unknown, formData: FormData) {
   redirect("/admin");
 }
 
-// 5.5 /admin/rounds — 회차 개설/마감/장소/도착공지
+// 5.5 /admin/rounds — 회차 개설/마감/장소/도착공지/전공
 export async function createRound(formData: FormData) {
   await requireAdmin();
   await db.round.create({
@@ -37,8 +37,19 @@ export async function createRound(formData: FormData) {
       date: new Date(String(formData.get("date"))),
       venue: String(formData.get("venue") || ""),
       venueAddress: String(formData.get("venueAddress") || ""),
+      majors: JSON.stringify(formData.getAll("majors").map(String)),
       isOpen: true,
     },
+  });
+  revalidatePath("/admin/rounds");
+}
+
+// 회차별 응시 가능 전공 수정
+export async function updateRoundMajors(id: string, formData: FormData) {
+  await requireAdmin();
+  await db.round.update({
+    where: { id },
+    data: { majors: JSON.stringify(formData.getAll("majors").map(String)) },
   });
   revalidatePath("/admin/rounds");
 }

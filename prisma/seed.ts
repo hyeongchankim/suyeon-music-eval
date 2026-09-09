@@ -18,7 +18,7 @@ async function main() {
   // 회차 (열린 회차 1 + 지난 회차 1)
   const open = await db.round.upsert({
     where: { id: "seed-round-open" },
-    update: {},
+    update: { majors: JSON.stringify(["피아노", "성악"]) },
     create: {
       id: "seed-round-open",
       term: "피아노 Season I",
@@ -26,6 +26,7 @@ async function main() {
       date: new Date("2026-09-13T10:00:00+09:00"),
       venue: "수연음악학원 대강당",
       venueAddress: "서울시 서초구 반포대로 00, 3층",
+      majors: JSON.stringify(["피아노", "성악"]),
       isOpen: true,
       arrivalNotice:
         "입실시간: 오전 9:30 / 주차: 건물 지하 1~2층 (2시간 무료) / 문의: 카카오채널 @수연음악학원",
@@ -34,7 +35,7 @@ async function main() {
 
   await db.round.upsert({
     where: { id: "seed-round-past" },
-    update: {},
+    update: { majors: JSON.stringify(["피아노"]) },
     create: {
       id: "seed-round-past",
       term: "피아노 Season I",
@@ -42,6 +43,7 @@ async function main() {
       date: new Date("2026-07-20T10:00:00+09:00"),
       venue: "수연음악학원 대강당",
       venueAddress: "서울시 서초구 반포대로 00, 3층",
+      majors: JSON.stringify(["피아노"]),
       isOpen: false,
       arrivalNotice: "종료된 회차입니다.",
     },
