@@ -147,11 +147,19 @@ npx prisma generate    # 타입 재생성 (db:push 가 대개 자동 실행)
 빌드 명령은 `package.json` 의 `vercel-build` 스크립트를 사용합니다:
 
 ```
-prisma generate && prisma db push && prisma db seed && next build
+prisma generate && prisma db push && next build
 ```
 
-= 배포할 때마다 스키마를 DB 에 반영하고 시드 데이터를 넣은 뒤 빌드합니다.
-(시드는 upsert 기반이라 반복 실행해도 안전합니다. 운영 전환 시 `prisma db seed` 부분을 빼세요.)
+= 배포할 때마다 스키마를 DB 에 반영한 뒤 빌드합니다. (관리자가 입력한 데이터는 유지됩니다.)
+
+**최초 1회 시드**: 새 DB 라면 로컬에서 운영 DB 를 가리켜 시드를 한 번 실행합니다.
+
+```bash
+# PowerShell
+$env:DATABASE_URL="postgresql://...(운영 문자열)"; npm run db:seed
+# bash
+DATABASE_URL="postgresql://...(운영 문자열)" npm run db:seed
+```
 
 ### 1) PostgreSQL 준비
 
