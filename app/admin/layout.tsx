@@ -8,6 +8,7 @@ const NAV = [
   { href: "/admin/rounds", label: "회차관리" },
   { href: "/admin/members", label: "인원관리" },
   { href: "/admin/applications", label: "신청자조회" },
+  { href: "/admin/timetable", label: "시간표제작" },
   { href: "/admin/scores", label: "점수입력" },
 ];
 

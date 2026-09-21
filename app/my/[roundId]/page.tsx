@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireStudent } from "@/lib/auth";
 import { formatRoundDate, parseList } from "@/lib/format";
 import { rankingState, sumAvg, inSameGroup, RANKING_MIN } from "@/lib/ranking";
+import { ARRIVE_BEFORE_MIN, buildSchedule, parseHM } from "@/lib/timetable";
 import OptInButton from "@/components/my/OptInButton";
 import Badge from "@/components/my/Badge";
 import RankingTab from "@/components/my/RankingTab";
@@ -47,6 +48,28 @@ export default async function RoundDetailPage({
   // 그룹랭킹 탭은 /api/ranking 로 이동했고, 음원공유 탭 인원 집계에만 사용한다.
   const sameGroup = <T extends { majors: string; targetSchool: string }>(rows: T[]) =>
     inSameGroup(rows, application);
+
+  // 관리자가 전송한 시간표가 있으면 내 연주 시간 계산
+  let mySlot: { start: string; arrive: string; group: number; no: number } | null = null;
+  const startMin = parseHM(round.ttStartTime);
+  if (
+    tab === "arrival" &&
+    round.ttSentAt &&
+    startMin !== null &&
+    application.paid &&
+    application.status !== "취소" &&
+    application.ttOrder !== null
+  ) {
+    const placed = await db.application.findMany({
+      where: { roundId: round.id, paid: true, status: { not: "취소" }, ttOrder: { not: null } },
+      orderBy: { ttOrder: "asc" },
+      select: { id: true, majors: true, targetSchool: true },
+    });
+    const me = buildSchedule(placed, startMin, round.ttPerHour, parseList(round.ttMajorOrder)).find(
+      (s) => s.id === application.id,
+    );
+    if (me) mySlot = { start: me.start, arrive: me.arrive, group: me.group, no: me.no };
+  }
 
   let audioMemberCount = 0;
   if (tab === "audio") {
@@ -91,7 +114,7 @@ export default async function RoundDetailPage({
       </div>
 
       <div className="card p-6">
-        {tab === "arrival" && <ArrivalTab round={round} />}
+        {tab === "arrival" && <ArrivalTab round={round} mySlot={mySlot} />}
         {tab === "report" && (
           <ReportTab scores={application.scores} pieces={parseList(application.pieces)} />
         )}
@@ -115,12 +138,26 @@ export default async function RoundDetailPage({
 /* ---------- 탭 01 도착·공지 ---------- */
 function ArrivalTab({
   round,
+  mySlot,
 }: {
   round: { venue: string; venueAddress: string; arrivalNotice: string | null };
+  mySlot: { start: string; arrive: string; group: number; no: number } | null;
 }) {
   const mapUrl = `https://map.naver.com/v5/search/${encodeURIComponent(round.venueAddress)}`;
   return (
     <div className="space-y-4 text-[15px]">
+      {mySlot && (
+        <div className="rounded-btn border border-accent bg-accent/5 p-4">
+          <p className="text-sm text-ink/60">내 연주 시간</p>
+          <p className="text-3xl font-bold text-primary">
+            {mySlot.group}조 {mySlot.start}
+          </p>
+          <p className="mt-2 text-sm font-medium text-coral">
+            연주 시간 {ARRIVE_BEFORE_MIN}분 전({mySlot.arrive})까지 도착하셔서 연습을 진행해
+            주세요.
+          </p>
+        </div>
+      )}
       <div>
         <p className="text-sm text-ink/50">장소</p>
         <p className="font-medium">{round.venue}</p>

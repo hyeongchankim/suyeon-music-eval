@@ -33,6 +33,13 @@ model Round {
   majors        String   @default("[]") // JSON 배열 — 이 회차에서 응시 가능한 전공
   isOpen        Boolean  @default(true)
   arrivalNotice String? // 도착공지 텍스트/링크
+
+  // 시간표 제작 설정
+  ttStartTime String? // "HH:mm" — 시간표 시작 시각 (미지정이면 회차 일시의 시각)
+  ttPerHour   Int      @default(10) // 시간당 인원
+  ttMajorOrder String  @default("[]") // JSON 배열 — 전공 진행 순서
+  ttSentAt    DateTime? // 마지막 시간표 전송 시각
+
   applications  Application[]
 }
 
@@ -56,6 +63,7 @@ model Application {
   audioOptIn       Boolean  @default(false)
   status           String   @default("접수") // 접수/확정/취소
   paid             Boolean  @default(false) // 입금 확인
+  ttOrder          Int? // 시간표 내 순서 (0부터, 미배정이면 null)
   createdAt        DateTime @default(now())
 
   student  Student      @relation(fields: [studentId], references: [id])
