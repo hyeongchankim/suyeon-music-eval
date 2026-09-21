@@ -9,6 +9,7 @@
     "lint": "next lint",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
+    "db:seed:dummy": "tsx prisma/seed-dummy.ts",
     "postinstall": "prisma generate",
     "vercel-build": "prisma generate && prisma db push && next build"
   },
