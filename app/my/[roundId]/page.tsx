@@ -63,9 +63,9 @@ export default async function RoundDetailPage({
     const placed = await db.application.findMany({
       where: { roundId: round.id, paid: true, status: { not: "취소" }, ttOrder: { not: null } },
       orderBy: { ttOrder: "asc" },
-      select: { id: true, majors: true, targetSchool: true },
+      select: { id: true, majors: true, targetSchool: true, pieceCount: true },
     });
-    const me = buildSchedule(placed, startMin, round.ttPerHour, parseList(round.ttMajorOrder)).find(
+    const me = buildSchedule(placed, startMin, parseList(round.ttMajorOrder)).find(
       (s) => s.id === application.id,
     );
     if (me) mySlot = { start: me.start, arrive: me.arrive, group: me.group, no: me.no };

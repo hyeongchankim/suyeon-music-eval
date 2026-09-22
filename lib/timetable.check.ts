@@ -8,7 +8,6 @@ import {
   primaryMajor,
   sortForTimetable,
   buildSchedule,
-  perSlot,
   timetableMessage,
 } from "./timetable";
 
@@ -42,37 +41,55 @@ assert.deepEqual(
   "성악(서울대,연세대) → 피아노(신청 빠른 순)",
 );
 
-// 30분 단위 조: 시간당 10명 → 조당 5명
-assert.equal(perSlot(10), 5);
-assert.equal(perSlot(1), 1, "최소 1명");
-const same = Array.from({ length: 12 }, (_, i) => ({ id: String(i), majors: '["피아노"]', targetSchool: "서울대" }));
-const s = buildSchedule(same, 540, 10, ["피아노"]); // 시작 9:00
-// 같은 (전공,학교)라도 5명을 채우면 다음 조
-assert.deepEqual(s.map((x) => x.group), [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3]);
-// 같은 조는 모두 같은 시각(학생별 분 단위 없음), 조마다 +30분
-assert.deepEqual(Array.from(new Set(s.map((x) => x.start))), ["9:00", "9:30", "10:00"]);
-assert.equal(s[0].start, s[4].start, "1조 5명 모두 9:00");
-assert.equal(s[5].start, "9:30", "2조 9:30");
+// 30분 단위 조: 2곡씩 4명이면 딱 8곡 → 4명까지 한 조, 5번째는 다음 조
+const twoEach = Array.from({ length: 5 }, (_, i) => ({
+  id: String(i),
+  majors: '["피아노"]',
+  targetSchool: "서울대",
+  pieceCount: 2,
+}));
+const s = buildSchedule(twoEach, 540, ["피아노"]); // 시작 9:00
+assert.deepEqual(s.map((x) => x.group), [1, 1, 1, 1, 2], "4명(8곡)까지 1조, 5번째는 2조");
+assert.deepEqual(Array.from(new Set(s.map((x) => x.start))), ["9:00", "9:30"]);
+assert.equal(s[0].start, s[3].start, "1조 4명 모두 9:00");
+assert.equal(s[4].start, "9:30", "2조 9:30");
 assert.equal(s[0].arrive, "8:30", "연주 30분 전 도착");
 assert.equal(s[0].end, "9:30");
+
+// 3곡인 사람 2명(6곡) + 2곡인 사람 1명 → 총 8곡, 3명이 한 조
+const mixedPieces = buildSchedule(
+  [
+    { majors: '["피아노"]', targetSchool: "서울대", pieceCount: 3 },
+    { majors: '["피아노"]', targetSchool: "서울대", pieceCount: 3 },
+    { majors: '["피아노"]', targetSchool: "서울대", pieceCount: 2 },
+    { majors: '["피아노"]', targetSchool: "서울대", pieceCount: 1 },
+  ],
+  540,
+  ["피아노"],
+);
+assert.deepEqual(mixedPieces.map((x) => x.group), [1, 1, 1, 2], "6+2=8곡까지 3명, 넘으면 4번째는 새 조");
+
+// 4명이어도 인원 상한(4명)에 걸리면 곡수가 남아도 새 조
+const fourAtCap = buildSchedule(
+  Array.from({ length: 5 }, () => ({ majors: '["피아노"]', targetSchool: "서울대", pieceCount: 1 })),
+  540,
+  ["피아노"],
+);
+assert.deepEqual(fourAtCap.map((x) => x.group), [1, 1, 1, 1, 2], "곡수는 여유 있어도 4명 넘으면 새 조");
 
 // 조: 학교/전공이 바뀌면 새 조
 const mixed = buildSchedule(
   [
-    { majors: '["성악"]', targetSchool: "서울대" },
-    { majors: '["성악"]', targetSchool: "서울대" },
-    { majors: '["성악"]', targetSchool: "연세대" },
-    { majors: '["피아노"]', targetSchool: "연세대" },
+    { majors: '["성악"]', targetSchool: "서울대", pieceCount: 1 },
+    { majors: '["성악"]', targetSchool: "서울대", pieceCount: 1 },
+    { majors: '["성악"]', targetSchool: "연세대", pieceCount: 1 },
+    { majors: '["피아노"]', targetSchool: "연세대", pieceCount: 1 },
   ],
   540,
-  10,
   ["성악", "피아노"],
 );
 assert.deepEqual(mixed.map((x) => x.group), [1, 1, 2, 3]);
 assert.deepEqual(mixed.map((x) => x.start), ["9:00", "9:00", "9:30", "10:00"], "인원이 적어도 조마다 30분");
-
-// 시간당 인원이 6이면 조당 3명
-assert.deepEqual(buildSchedule(same, 540, 6, ["피아노"]).slice(0, 4).map((x) => x.group), [1, 1, 1, 2]);
 
 // 안내 문구에 조/시간과 30분 전 도착·연습 안내 포함
 const msg = timetableMessage({

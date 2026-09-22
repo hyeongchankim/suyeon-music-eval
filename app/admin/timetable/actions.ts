@@ -30,13 +30,14 @@ async function load(roundId: string) {
   return { round, apps, order };
 }
 
-// 시작 시간 · 시간당 인원
+// 시작 시간
+// ponytail: 조 인원은 이제 시간당 인원이 아니라 lib/timetable.ts 의
+// MAX_GROUP_SIZE/MAX_GROUP_PIECES 고정값으로 정해져서 Round.ttPerHour 는 더 이상 쓰지 않음
 export async function saveTimetableSettings(roundId: string, formData: FormData) {
   await requireAdmin();
   const startTime = String(formData.get("startTime") ?? "");
   if (parseHM(startTime) === null) return;
-  const perHour = Math.min(60, Math.max(1, Math.floor(Number(formData.get("perHour"))) || 10));
-  await db.round.update({ where: { id: roundId }, data: { ttStartTime: startTime, ttPerHour: perHour } });
+  await db.round.update({ where: { id: roundId }, data: { ttStartTime: startTime } });
   revalidatePath(PATH);
 }
 

@@ -82,34 +82,42 @@ export function sortForTimetable<
 /** 한 조가 차지하는 시간(분) */
 export const SLOT_MIN = 30;
 
-/** 시간당 perHour 명 → 30분(1조)당 인원 */
-export const perSlot = (perHour: number) =>
-  Math.max(1, Math.round((perHour * SLOT_MIN) / 60));
+/** 한 조 최대 인원 */
+export const MAX_GROUP_SIZE = 4;
+
+/** 한 조 최대 총 곡수 (4명 × 1인당 평균 2곡 기준) */
+export const MAX_GROUP_PIECES = 8;
 
 /**
  * 순서가 정해진 신청자 목록에 조와 시간을 붙인다.
- * - 조: (전공, 지망학교)가 바뀌거나 한 조가 perSlot 명을 채우면 새 조
+ * - 조: (전공, 지망학교)가 바뀌면 새 조.
+ *   같은 (전공, 지망학교)라도 다음 사람을 더하면 인원이 4명을 넘거나
+ *   총 곡수가 8곡을 넘을 경우 새 조로 넘어간다.
+ *   예) 3곡인 사람 2명(총 6곡) + 2곡인 사람 1명 → 총 8곡, 3명이 한 조.
  * - 시간: 조마다 30분 블록 — 1조 시작시각, 2조 +30분 … (같은 조는 모두 같은 시각, 학생별 분 단위 없음)
  */
-export function buildSchedule<T extends { majors: string; targetSchool: string }>(
-  apps: T[],
-  startMin: number,
-  perHour: number,
-  order: string[],
-) {
-  const cap = perSlot(perHour);
+export function buildSchedule<
+  T extends { majors: string; targetSchool: string; pieceCount: number },
+>(apps: T[], startMin: number, order: string[]) {
   let group = 0;
-  let inGroup = 0;
+  let groupSize = 0;
+  let groupPieces = 0;
   let prevKey = "";
   return apps.map((a, i) => {
     const major = primaryMajor(a.majors, order);
     const key = `${major}|${a.targetSchool}`;
-    if (key !== prevKey || inGroup >= cap) {
+    const pieces = Math.max(1, a.pieceCount || 1);
+    const overflow =
+      groupSize > 0 &&
+      (groupSize + 1 > MAX_GROUP_SIZE || groupPieces + pieces > MAX_GROUP_PIECES);
+    if (key !== prevKey || overflow) {
       group++;
-      inGroup = 0;
+      groupSize = 0;
+      groupPieces = 0;
       prevKey = key;
     }
-    inGroup++;
+    groupSize++;
+    groupPieces += pieces;
     const groupStart = startMin + (group - 1) * SLOT_MIN;
     return {
       ...a,

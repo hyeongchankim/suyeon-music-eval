@@ -7,7 +7,8 @@ import { MAJORS } from "@/lib/validators";
 import {
   ARRIVE_BEFORE_MIN,
   SLOT_MIN,
-  perSlot,
+  MAX_GROUP_SIZE,
+  MAX_GROUP_PIECES,
   parseHM,
   kstHM,
   kstDateTime,
@@ -62,9 +63,8 @@ export default async function AdminTimetablePage({
   const universe = majorUniverse(parseList(round.majors), eligible, MAJORS);
   const order = effectiveMajorOrder(parseList(round.ttMajorOrder), universe);
   const startHM = round.ttStartTime ?? kstHM(round.date);
-  const perHour = round.ttPerHour;
 
-  const rows = buildSchedule(placed, parseHM(startHM) ?? 0, perHour, order);
+  const rows = buildSchedule(placed, parseHM(startHM) ?? 0, order);
   const groups: { no: number; major: string; school: string; rows: typeof rows }[] = [];
   for (const r of rows) {
     const last = groups[groups.length - 1];
@@ -130,22 +130,10 @@ export default async function AdminTimetablePage({
               className="field w-36"
             />
           </label>
-          <label className="block">
-            <span className="label">시간당 인원</span>
-            <input
-              key={perHour}
-              type="number"
-              name="perHour"
-              min={1}
-              max={60}
-              defaultValue={perHour}
-              required
-              className="field w-28"
-            />
-          </label>
           <button className="btn-ghost">설정 저장</button>
           <p className="text-xs text-ink/50">
-            {SLOT_MIN}분(1조)당 {perSlot(perHour)}명씩 · 조마다 {SLOT_MIN}분 단위로 배치됩니다.
+            한 조는 최대 {MAX_GROUP_SIZE}명, 총 곡수 {MAX_GROUP_PIECES}곡을 넘지 않는 선에서
+            자동으로 나뉘고, 조마다 {SLOT_MIN}분 단위로 배치됩니다.
           </p>
         </form>
 
