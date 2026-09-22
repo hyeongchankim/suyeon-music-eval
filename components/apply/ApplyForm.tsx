@@ -4,7 +4,7 @@ import { forwardRef, useEffect, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { applicationSchema, type ApplicationInput, MAJORS } from "@/lib/validators";
+import { applicationSchema, type ApplicationInput, MAJORS, GRADES } from "@/lib/validators";
 import { formatRoundDate } from "@/lib/format";
 
 type Round = {
@@ -17,9 +17,28 @@ type Round = {
 };
 
 const STEP_FIELDS: (keyof ApplicationInput)[][] = [
-  ["name", "advisorName", "majors", "roundIds", "targetSchool", "pieceCount", "pieces"],
+  [
+    "name",
+    "advisorName",
+    "currentSchool",
+    "grade",
+    "majors",
+    "roundIds",
+    "targetSchool",
+    "pieceCount",
+    "pieces",
+  ],
   ["wantsScale", "wantsBlind", "wantsScoreReview", "preferredTime", "questionForJudge"],
-  ["loginId", "phone", "email", "password", "passwordConfirm", "agreedNotice", "agreePrivacy"],
+  [
+    "loginId",
+    "phone",
+    "email",
+    "homeAddress",
+    "password",
+    "passwordConfirm",
+    "agreedNotice",
+    "agreePrivacy",
+  ],
 ];
 
 export default function ApplyForm({ rounds }: { rounds: Round[] }) {
@@ -136,6 +155,25 @@ export default function ApplyForm({ rounds }: { rounds: Round[] }) {
             </Field>
             <Field label="지도교수명" error={err("advisorName")}>
               <input className="field" {...register("advisorName")} />
+            </Field>
+            <Field
+              label="현재 재학중인 학교"
+              required
+              error={err("currentSchool")}
+            >
+              <input className="field" {...register("currentSchool")} />
+            </Field>
+            <Field label="학년" required error={err("grade")}>
+              <select className="field" defaultValue="" {...register("grade")}>
+                <option value="" disabled>
+                  선택하세요
+                </option>
+                {GRADES.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
             </Field>
 
             <div>
@@ -280,6 +318,9 @@ export default function ApplyForm({ rounds }: { rounds: Round[] }) {
             </Field>
             <Field label="이메일" required error={err("email")}>
               <input className="field" type="email" {...register("email")} />
+            </Field>
+            <Field label="집주소" required error={err("homeAddress")}>
+              <input className="field" {...register("homeAddress")} />
             </Field>
             <Field
               label="비밀번호"

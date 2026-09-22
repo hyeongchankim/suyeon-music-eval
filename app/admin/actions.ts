@@ -101,6 +101,9 @@ export async function updateMember(id: string, formData: FormData) {
       name: String(formData.get("name") || "").trim(),
       phone: String(formData.get("phone") || "").trim(),
       email: String(formData.get("email") || "").trim(),
+      currentSchool: String(formData.get("currentSchool") || "").trim(),
+      grade: String(formData.get("grade") || "").trim(),
+      homeAddress: String(formData.get("homeAddress") || "").trim(),
     },
   });
   revalidatePath("/admin/members");

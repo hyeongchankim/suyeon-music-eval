@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { updateMember, resetMemberPassword, deleteMember } from "@/app/admin/actions";
+import { GRADES } from "@/lib/validators";
 
 export type Member = {
   id: string;
@@ -9,6 +10,9 @@ export type Member = {
   name: string;
   phone: string;
   email: string;
+  currentSchool: string;
+  grade: string;
+  homeAddress: string;
   createdAt: string;
   hasPassword: boolean;
   applications: { id: string; roundLabel: string; status: string }[];
@@ -41,6 +45,11 @@ export default function MemberRow({ m }: { m: Member }) {
         </td>
         <td className="p-3">{m.phone}</td>
         <td className="p-3">{m.email}</td>
+        <td className="p-3">
+          {m.currentSchool || <span className="text-coral">미입력</span>}
+          {m.grade && <div className="text-xs text-ink/50">{m.grade}</div>}
+        </td>
+        <td className="p-3">{m.homeAddress || <span className="text-coral">미입력</span>}</td>
         <td className="p-3 text-center">{m.applications.length}</td>
         <td className="p-3 text-ink/60">{m.createdAt.slice(0, 10)}</td>
         <td className="p-3">
@@ -77,7 +86,7 @@ export default function MemberRow({ m }: { m: Member }) {
 
       {editing && (
         <tr className="border-b border-line bg-surface">
-          <td colSpan={7} className="p-3">
+          <td colSpan={9} className="p-3">
             <form
               className="flex flex-wrap items-end gap-2"
               onSubmit={(e) => {
@@ -89,15 +98,51 @@ export default function MemberRow({ m }: { m: Member }) {
             >
               <label className="text-xs">
                 이름
-                <input name="name" defaultValue={m.name} className="field !min-h-0 !py-1 block" />
+                <input name="name" defaultValue={m.name} className="field !min-h-0 !py-1 block" required />
               </label>
               <label className="text-xs">
                 휴대폰
-                <input name="phone" defaultValue={m.phone} className="field !min-h-0 !py-1 block" />
+                <input name="phone" defaultValue={m.phone} className="field !min-h-0 !py-1 block" required />
               </label>
               <label className="text-xs">
                 이메일
-                <input name="email" defaultValue={m.email} className="field !min-h-0 !py-1 block" />
+                <input name="email" defaultValue={m.email} className="field !min-h-0 !py-1 block" required />
+              </label>
+              <label className="text-xs">
+                재학중 학교
+                <input
+                  name="currentSchool"
+                  defaultValue={m.currentSchool}
+                  className="field !min-h-0 !py-1 block"
+                  required
+                />
+              </label>
+              <label className="text-xs">
+                학년
+                <select
+                  name="grade"
+                  defaultValue={m.grade}
+                  className="field !min-h-0 !py-1 block"
+                  required
+                >
+                  <option value="" disabled>
+                    선택
+                  </option>
+                  {GRADES.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs">
+                집주소
+                <input
+                  name="homeAddress"
+                  defaultValue={m.homeAddress}
+                  className="field !min-h-0 !py-1 block"
+                  required
+                />
               </label>
               <button className="btn-primary !min-h-0 !py-1.5">저장</button>
             </form>

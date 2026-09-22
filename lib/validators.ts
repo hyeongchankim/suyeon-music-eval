@@ -2,12 +2,16 @@ import { z } from "zod";
 
 export const MAJORS = ["피아노", "성악", "현악", "관악", "작곡"] as const;
 
+export const GRADES = ["중1", "중2", "중3", "고1", "고2", "고3", "N수생"] as const;
+
 /** 5.2 신청서 — 3-step 폼 전체 payload */
 export const applicationSchema = z
   .object({
     // Step 1
     name: z.string().trim().min(1, "참가자명을 입력하세요"),
     advisorName: z.string().trim().optional().or(z.literal("")),
+    currentSchool: z.string().trim().min(1, "현재 재학중인 학교를 입력하세요"),
+    grade: z.enum(GRADES, { errorMap: () => ({ message: "학년을 선택하세요" }) }),
     majors: z.array(z.enum(MAJORS)).min(1, "전공을 1개 이상 선택하세요"),
     roundIds: z.array(z.string()).min(1, "참가 희망 회차를 1개 이상 선택하세요"),
     targetSchool: z.string().trim().min(1, "희망 목표(지망학교)를 입력하세요"),
@@ -30,6 +34,7 @@ export const applicationSchema = z
       .trim()
       .regex(/^01[0-9]-?\d{3,4}-?\d{4}$/, "휴대폰번호 형식이 올바르지 않습니다"),
     email: z.string().trim().email("이메일 형식이 올바르지 않습니다"),
+    homeAddress: z.string().trim().min(1, "집주소를 입력하세요"),
     password: z.string().min(8, "비밀번호는 8자 이상이어야 합니다"),
     passwordConfirm: z.string().min(1, "비밀번호를 다시 입력하세요"),
     agreedNotice: z.boolean().refine((v) => v === true, "유의사항 확인이 필요합니다"),

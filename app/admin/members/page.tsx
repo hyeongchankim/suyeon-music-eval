@@ -21,6 +21,9 @@ export default async function AdminMembersPage() {
     name: s.name,
     phone: s.phone,
     email: s.email,
+    currentSchool: s.currentSchool ?? "",
+    grade: s.grade ?? "",
+    homeAddress: s.homeAddress ?? "",
     createdAt: s.createdAt.toISOString(),
     hasPassword: !!s.passwordHash,
     applications: s.applications.map((a) => ({
@@ -46,6 +49,8 @@ export default async function AdminMembersPage() {
               <th className="p-3">이름 / ID</th>
               <th className="p-3">휴대폰</th>
               <th className="p-3">이메일</th>
+              <th className="p-3">재학중 학교 / 학년</th>
+              <th className="p-3">집주소</th>
               <th className="p-3">신청</th>
               <th className="p-3">가입일</th>
               <th className="p-3">비밀번호</th>
@@ -58,7 +63,7 @@ export default async function AdminMembersPage() {
             ))}
             {members.length === 0 && (
               <tr>
-                <td colSpan={7} className="p-6 text-center text-ink/50">
+                <td colSpan={9} className="p-6 text-center text-ink/50">
                   등록된 참가자가 없습니다.
                 </td>
               </tr>

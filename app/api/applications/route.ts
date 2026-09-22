@@ -41,14 +41,22 @@ export async function POST(req: Request) {
         name: d.name,
         phone: d.phone,
         email: d.email,
+        currentSchool: d.currentSchool,
+        grade: d.grade,
+        homeAddress: d.homeAddress,
         passwordHash,
       },
     });
-  } else if (!student.passwordHash) {
-    // 비밀번호가 아직 없는 기존 학생이면 이번 입력값으로 설정 (재신청 시)
+  } else {
+    // 기존 학생이 재신청하는 경우 — 비밀번호(없을 때)와 최신 개인정보로 갱신
     await db.student.update({
       where: { id: student.id },
-      data: { passwordHash },
+      data: {
+        ...(student.passwordHash ? {} : { passwordHash }),
+        currentSchool: d.currentSchool,
+        grade: d.grade,
+        homeAddress: d.homeAddress,
+      },
     });
   }
 

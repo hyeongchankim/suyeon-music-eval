@@ -17,6 +17,11 @@ model Student {
   name         String
   phone        String
   email        String
+  // ponytail: 기존 신청자가 있어 nullable로 추가. "필수 입력"은 신청서 zod 검증 +
+  // 관리자 인원관리 편집 폼의 required 속성으로 강제하고, DB 제약으로는 강제하지 않음.
+  currentSchool String? // 현재 재학중인 학교
+  grade         String? // 학년
+  homeAddress   String? // 집주소
   passwordHash String? // 선택 설정
   loginCount   Int      @default(0) // 5.3 — 3회 이상 로그인 시 비밀번호 설정 유도
   createdAt    DateTime @default(now())
