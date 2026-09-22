@@ -33,6 +33,11 @@ export const dynamic = "force-dynamic";
 const arrowBtn =
   "flex h-7 w-7 items-center justify-center rounded border border-line text-xs hover:bg-surface disabled:cursor-not-allowed disabled:opacity-30";
 
+/** "현재 학교 학년 이름" — 미입력 항목은 건너뜀 (레거시 데이터 대비) */
+function displayName(s: { name: string; currentSchool: string | null; grade: string | null }) {
+  return [s.currentSchool, s.grade, s.name].filter(Boolean).join(" ");
+}
+
 export default async function AdminTimetablePage({
   searchParams,
 }: {
@@ -244,7 +249,7 @@ export default async function AdminTimetablePage({
                     <tr key={r.id} className="border-b border-line">
                       <td className="p-3 text-ink/50">{r.no}</td>
                       <td className="p-3">
-                        {r.student.name}
+                        {displayName(r.student)}
                         <div className="text-xs text-ink/50">{r.student.loginId}</div>
                       </td>
                       <td className="p-3">{r.major}</td>
@@ -291,7 +296,7 @@ export default async function AdminTimetablePage({
             {unplaced.map((a) => (
               <li key={a.id} className="flex items-center justify-between py-2">
                 <span>
-                  {a.student.name} · {parseList(a.majors).join(", ")} · {a.targetSchool}
+                  {displayName(a.student)} · {parseList(a.majors).join(", ")} · {a.targetSchool}
                 </span>
                 <form action={addToTimetable.bind(null, a.id)}>
                   <button className="btn-ghost !min-h-0 !py-1 text-xs">맨 뒤에 추가</button>

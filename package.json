@@ -10,6 +10,7 @@
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "db:seed:dummy": "tsx prisma/seed-dummy.ts",
+    "db:backfill-info": "tsx prisma/backfill-student-info.ts",
     "postinstall": "prisma generate",
     "vercel-build": "prisma generate && prisma db push && next build"
   },
